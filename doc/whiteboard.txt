@@ -1,0 +1,130 @@
+*whiteboard.txt*  Pin files and code to an Excalidraw whiteboard from Neovim
+
+==============================================================================
+CONTENTS                                              *whiteboard-contents*
+
+  1. Introduction .................. |whiteboard-intro|
+  2. Requirements .................. |whiteboard-requirements|
+  3. Setup ......................... |whiteboard-setup|
+  4. Commands ...................... |whiteboard-commands|
+  5. Keymaps ....................... |whiteboard-keymaps|
+  6. Configuration ................. |whiteboard-config|
+  7. Persistence ................... |whiteboard-persistence|
+
+==============================================================================
+1. INTRODUCTION                                         *whiteboard-intro*
+
+whiteboard.nvim lets you pin files and code snippets from Neovim onto a
+persistent Excalidraw canvas that opens in your browser. Each git repository
+gets its own board, saved automatically.
+
+- Press a keymap on any file  → a card appears on the board (filename + path)
+- Visual-select code, press a keymap → a snippet card appears (file, lines, code)
+- Use the full Excalidraw canvas: draw, annotate, rearrange, zoom freely
+- Boards persist across Neovim sessions, stored in Neovim's data directory
+
+==============================================================================
+2. REQUIREMENTS                                   *whiteboard-requirements*
+
+- Neovim 0.9+
+- Node.js 18+ (`node` on your PATH)
+- curl (ships with Windows 11, macOS, most Linux distros)
+- A default browser
+
+First-time setup (run once after installing the plugin): >
+  cd <plugin-dir>/server && npm install
+<
+Check everything is in order with: >
+  :checkhealth whiteboard
+<
+
+==============================================================================
+3. SETUP                                               *whiteboard-setup*
+
+Minimal setup (accepts all defaults): >
+  require('whiteboard-nvim').setup()
+<
+With custom options: >
+  require('whiteboard-nvim').setup({
+    keymaps = {
+      add_file    = '<leader>wa',
+      add_snippet = '<leader>ws',
+      open        = '<leader>wo',
+    },
+    server = {
+      auto_open = true,   -- open browser automatically on first pin
+    },
+  })
+<
+
+==============================================================================
+4. COMMANDS                                          *whiteboard-commands*
+
+*:WhiteboardOpen*
+  Open the current repo's board in a browser. Starts the server if needed.
+
+*:WhiteboardAddFile*
+  Pin the current buffer's file to the board as a file card.
+
+*:WhiteboardAddSnippet*                               *:'<,'>WhiteboardAddSnippet*
+  Pin the visually selected code to the board as a snippet card.
+  Works as a range command: `:'<,'>WhiteboardAddSnippet`
+
+*:WhiteboardClose*
+  Stop the whiteboard server.
+
+*:WhiteboardReset*
+  Delete the board JSON for the current repo and stop the server.
+  The board will be blank on next open.
+
+==============================================================================
+5. KEYMAPS                                           *whiteboard-keymaps*
+
+Default keymaps (set via `setup()`; set to '' to disable):
+
+  <leader>wa   (normal)  Pin current file to board
+  <leader>ws   (visual)  Pin selected code to board
+  <leader>wo   (normal)  Open board in browser
+
+==============================================================================
+6. CONFIGURATION                                     *whiteboard-config*
+
+All options with their defaults: >
+  require('whiteboard-nvim').setup({
+    keymaps = {
+      add_file    = '<leader>wa',
+      add_snippet = '<leader>ws',
+      open        = '<leader>wo',
+    },
+    server = {
+      port      = 0,     -- 0 = OS-assigned random port
+      auto_open = true,  -- open browser on first pin
+    },
+    ui = {
+      card_width     = 300,   -- file card width (px)
+      snippet_width  = 420,   -- snippet card width (px)
+      card_height    = 120,   -- file card height (px)
+      snippet_height = 200,   -- snippet card height (px)
+      row_gap        = 40,    -- vertical gap between card rows (px)
+      col_gap        = 40,    -- horizontal gap between cards (px)
+      cards_per_row  = 4,     -- cards before wrapping to next row
+    },
+  })
+<
+
+==============================================================================
+7. PERSISTENCE                                     *whiteboard-persistence*
+
+Boards are stored in Neovim's data directory — never inside your projects.
+No `.gitignore` changes needed in any repo.
+
+Location: `{stdpath('data')}/whiteboard/boards/<hash>.json`
+
+  Windows:      %LOCALAPPDATA%\nvim-data\whiteboard\boards\
+  Linux/macOS:  ~/.local/share/nvim/whiteboard/boards/
+
+Each repo gets its own JSON file, identified by a hash of the repo root path.
+The Excalidraw canvas state (elements, scroll position, zoom) is saved
+automatically 1 second after each change.
+
+vim:tw=78:ts=8:ft=help:norl:
