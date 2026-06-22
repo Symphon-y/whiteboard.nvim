@@ -18,9 +18,19 @@ local function ensure_server(cb)
 
     state.new(root)
 
-    local job_id = require('whiteboard-nvim.server').start(root, function(port)
-      cb(port)
-    end)
+    local job_id = require('whiteboard-nvim.server').start(root, {
+      on_ready = function(port) cb(port) end,
+
+      -- Called when the user clicks a card's link icon in the browser.
+      on_open = function(path, line)
+        -- Normalize path separators (forward slashes from URL encoding on all platforms)
+        local norm = vim.fn.fnamemodify(path:gsub('\\', '/'), ':p')
+        vim.cmd('edit ' .. vim.fn.fnameescape(norm))
+        if line and line > 0 then
+          vim.api.nvim_win_set_cursor(0, { line, 0 })
+        end
+      end,
+    })
 
     if job_id then
       state.session.server_job = job_id
@@ -89,6 +99,7 @@ function M.add_file()
     local elements = require('whiteboard-nvim.board').file_card({
       filename = filename,
       rel_path = rel_path,
+      abs_path = abs_path,
     })
 
     require('whiteboard-nvim.client').add_elements(port, elements)
@@ -122,6 +133,7 @@ function M.add_snippet()
     local elements = require('whiteboard-nvim.board').snippet_card({
       filename   = filename,
       rel_path   = rel_path,
+      abs_path   = abs_path,
       start_line = start_line,
       end_line   = end_line,
       lines      = lines,

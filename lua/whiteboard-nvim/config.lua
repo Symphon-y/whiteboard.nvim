@@ -18,6 +18,9 @@ local defaults = {
     row_gap        = 40,
     col_gap        = 40,
     cards_per_row  = 4,
+    -- Canvas background color. Defaults to a subtle off-white so white file
+    -- cards are distinguishable from the canvas. Set to '#ffffff' for pure white.
+    background     = '#f0f0f0',
   },
 }
 

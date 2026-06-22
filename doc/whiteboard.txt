@@ -101,13 +101,14 @@ All options with their defaults: >
       auto_open = true,  -- open browser on first pin
     },
     ui = {
-      card_width     = 300,   -- file card width (px)
-      snippet_width  = 420,   -- snippet card width (px)
-      card_height    = 120,   -- file card height (px)
-      snippet_height = 200,   -- snippet card height (px)
-      row_gap        = 40,    -- vertical gap between card rows (px)
-      col_gap        = 40,    -- horizontal gap between cards (px)
-      cards_per_row  = 4,     -- cards before wrapping to next row
+      card_width     = 300,        -- file card width (px)
+      snippet_width  = 420,        -- snippet card width (px)
+      card_height    = 120,        -- file card height (px)
+      snippet_height = 200,        -- snippet card height (px)
+      row_gap        = 40,         -- vertical gap between card rows (px)
+      col_gap        = 40,         -- horizontal gap between cards (px)
+      cards_per_row  = 4,          -- cards before wrapping to next row
+      background     = '#f0f0f0',  -- canvas background color
     },
   })
 <

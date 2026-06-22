@@ -13,9 +13,10 @@ function arg(name) {
   return i !== -1 ? args[i + 1] : null
 }
 
-const repoRoot = arg('repo')     || process.cwd()
-const dataDir  = arg('data-dir') || path.join(require('os').homedir(), '.local', 'share', 'nvim')
-const port     = parseInt(arg('port') || '0', 10)
+const repoRoot   = arg('repo')       || process.cwd()
+const dataDir    = arg('data-dir')   || path.join(require('os').homedir(), '.local', 'share', 'nvim')
+const port       = parseInt(arg('port') || '0', 10)
+const background = arg('background') || '#f0f0f0'
 
 // --- Board path (mirrors repo.lua's board_path logic) ---
 const crypto    = require('crypto')
@@ -25,6 +26,11 @@ const boardPath = path.join(boardDir, repoHash + '.json')
 
 // Load board state once at startup; mutated in-place by addElements / PUT /api/board
 const state = board.load(boardPath)
+
+// Set background for new boards (existing boards keep their persisted appState)
+if (!state.appState.viewBackgroundColor) {
+  state.appState.viewBackgroundColor = background
+}
 
 // --- Static file serving ---
 const PUBLIC = path.join(__dirname, 'public')
@@ -124,6 +130,21 @@ function broadcast(msg) {
 wss.on('connection', ws => {
   // Send the full board to any newly connected browser
   ws.send(JSON.stringify({ type: 'board:init', elements: state.elements, appState: state.appState }))
+
+  // Handle messages FROM the browser (e.g. card link clicks)
+  ws.on('message', data => {
+    try {
+      const msg = JSON.parse(data)
+      if (msg.type === 'neovim:open') {
+        // Relay to Lua via stdout; server.lua's on_stdout parses CMD: lines
+        process.stdout.write('CMD:' + JSON.stringify({
+          type: 'open',
+          path: msg.path,
+          line: msg.line || 0,
+        }) + '\n')
+      }
+    } catch (_) {}
+  })
 })
 
 // --- Start ---

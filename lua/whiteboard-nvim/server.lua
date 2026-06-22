@@ -9,18 +9,20 @@ local function server_dir()
 end
 
 -- Start the Node.js server for repo_root.
--- Calls on_ready(port) once the server is listening.
+-- callbacks = { on_ready(port), on_open(path, line) }
 -- Returns the job id, or nil on failure.
-function M.start(repo_root, on_ready)
+function M.start(repo_root, callbacks)
   local state    = require('whiteboard-nvim.state')
   local data_dir = vim.fn.stdpath('data')
   local entry    = server_dir() .. '/index.js'
+  local cfg      = require('whiteboard-nvim.config').options
 
   local job_id = vim.fn.jobstart({
     'node', entry,
-    '--repo',     repo_root,
-    '--data-dir', data_dir,
-    '--port',     tostring(require('whiteboard-nvim.config').options.server.port),
+    '--repo',       repo_root,
+    '--data-dir',   data_dir,
+    '--port',       tostring(cfg.server.port),
+    '--background', cfg.ui.background,
   }, {
     -- stdout_buffered = false is critical: we stream stdout to capture the
     -- LISTENING:<port> sentinel as soon as the server emits it.
@@ -28,11 +30,23 @@ function M.start(repo_root, on_ready)
 
     on_stdout = function(_, lines)
       for _, line in ipairs(lines) do
+        -- Server-ready sentinel
         local port = line:match('^LISTENING:(%d+)$')
         if port and state.session then
           state.session.port    = tonumber(port)
           state.session.running = true
-          vim.schedule(function() on_ready(tonumber(port)) end)
+          vim.schedule(function() callbacks.on_ready(tonumber(port)) end)
+        end
+
+        -- Browser-initiated open command: CMD:<json>
+        local cmd_json = line:match('^CMD:(.+)$')
+        if cmd_json and callbacks.on_open then
+          local ok, data = pcall(vim.fn.json_decode, cmd_json)
+          if ok and data and data.type == 'open' then
+            vim.schedule(function()
+              callbacks.on_open(data.path, data.line or 0)
+            end)
+          end
         end
       end
     end,

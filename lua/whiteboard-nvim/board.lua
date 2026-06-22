@@ -8,6 +8,13 @@ local config = require('whiteboard-nvim.config')
 
 local PLACEHOLDER_GROUP = 'WHITEBOARD_GROUP_PLACEHOLDER'
 
+-- Percent-encode all characters that are not URL-safe alphanumerics.
+local function url_encode(str)
+  return (str:gsub('[^%w%-%.%_]', function(c)
+    return string.format('%%%02X', string.byte(c))
+  end))
+end
+
 local function base_element(type, x_off, y_off, w, h, extra)
   local el = {
     type            = type,
@@ -85,7 +92,9 @@ local function format_code(lines, max_lines, max_col)
 end
 
 -- File card: 3 elements — rectangle, filename text, path text.
--- opts = { filename: string, rel_path: string }
+-- opts = { filename, rel_path, abs_path? }
+-- When abs_path is provided, the rectangle gets a whiteboard:// link so
+-- clicking the card's link icon opens the file in Neovim.
 function M.file_card(opts)
   local cfg = config.options.ui
   local w   = cfg.card_width
@@ -96,6 +105,10 @@ function M.file_card(opts)
   local name_txt = text_el(pad, pad, w - pad * 2, 28, opts.filename, 20, 2, '#1e1e1e')
   local path_txt = text_el(pad, pad + 34, w - pad * 2, 16, opts.rel_path, 12, 2, '#868e96')
 
+  if opts.abs_path then
+    bg_rect.link = 'whiteboard://open?path=' .. url_encode(opts.abs_path) .. '&line=0'
+  end
+
   -- _cardMeta carries sizing hints for the server's positioning algorithm.
   -- The server strips this field before persisting the board.
   bg_rect._cardMeta = { cardWidth = w, cardHeight = h }
@@ -104,7 +117,8 @@ function M.file_card(opts)
 end
 
 -- Snippet card: 4 elements — rectangle, header, code body, "CODE" badge.
--- opts = { filename, rel_path, start_line, end_line, lines }
+-- opts = { filename, rel_path, abs_path?, start_line, end_line, lines }
+-- When abs_path is provided, clicking the link icon opens the file at start_line.
 function M.snippet_card(opts)
   local cfg  = config.options.ui
   local w    = cfg.snippet_width
@@ -119,6 +133,12 @@ function M.snippet_card(opts)
   local header_txt = text_el(pad, pad, w - pad * 3 - 36, 20, header_text, 14, 2, '#1e1e1e')
   local code_txt   = text_el(pad, pad + 26, w - pad * 2, h - pad * 2 - 26, code, 11, 3, '#495057')
   local badge_txt  = text_el(badge_x, pad + 2, 36, 14, 'CODE', 10, 2, '#339af0')
+
+  if opts.abs_path then
+    bg_rect.link = 'whiteboard://open?path=' .. url_encode(opts.abs_path)
+                .. '&line=' .. opts.start_line
+                .. '&end='  .. opts.end_line
+  end
 
   bg_rect._cardMeta = { cardWidth = w, cardHeight = h }
 
